@@ -10,9 +10,9 @@
 
 最终效果：一个 Web 页面，上传图片后自动识别图片中的文字。
 
-![Web UI 首页](screenshot_homepage.png)
+![Web UI 首页](screenshots_ocr_v6/screenshot_homepage.png)
 
-![OCR 识别结果](screenshot_result.png)
+![OCR 识别结果](screenshots_ocr_v6/screenshot_result.png)
 
 ---
 

@@ -540,100 +540,11 @@ Model files already exist. Using cached files.
  * Running on http://192.168.92.92:8080
 ```
 
-![终端启动截图](screenshot-terminal-start.png)
-
-> **注意**：模型文件在第一次运行时会自动下载，大小约 5-10MB，下载到 `~/.paddlex/official_models/` 目录。之后每次启动都会直接使用缓存，不再下载。
-
-> **为什么用 `0.0.0.0` 而不是 `127.0.0.1`？**  
-> `127.0.0.1` 只能本机访问，`0.0.0.0` 允许同一网络下的其他设备访问。
-
-### 5.2 验证服务是否正常
-
-新开一个终端窗口，执行：
-
-```bash
-# 测试首页是否正常
-curl -s -o /dev/null -w "HTTP 状态码: %{http_code}\n" http://localhost:8080/
-```
-
-正常应该输出：
-
-```
-HTTP 状态码: 200
-```
-
-> **200** 是 HTTP 协议表示"成功"的状态码。如果不返回 200，说明服务没起来或者端口被占用。
-
----
-
-## 六、使用 OCR 服务
-
-### 6.1 网页界面使用
-
-在浏览器打开 `http://localhost:8080`，你会看到：
-
-![OCR 首页](screenshot-ocr-home.png)
-
-操作步骤：
-
-1. 点击中央的上传区域（或直接拖拽图片进去）
-2. 选择一张包含文字的图片（JPG/PNG/WebP/BMP 都行）
-3. 等待几秒钟，识别结果会显示在下方
-
-识别结果包含：
-- **识别的文字**
-- **置信度**（模型对这个识别结果的把握程度，0-100%）
-  - 绿色（>= 90%）：很高把握
-  - 橙色（>= 70%）：一般把握
-  - 红色（< 70%）：较低把握，可能需要检查
-
-效果示例：
-
-![OCR 结果](screenshot-ocr-result.png)
-
-### 6.2 API 接口调用
-
-你也可以通过命令行的方式调用 OCR 服务，比如在脚本中批量处理图片：
-
-```bash
-# POST 请求上传图片，返回 JSON 格式结果
-curl -s -X POST http://localhost:8080/ocr \
-    -F "file=@图片文件路径.jpg" | python3 -m json.tool
-```
-
-返回的 JSON 格式：
-
-```json
-{
-  "results": [
-    { "text": "招商银行", "confidence": 0.9918 },
-    { "text": "UnionPay", "confidence": 0.9856 },
-    { "text": "银联", "confidence": 0.9997 }
-  ]
-}
-```
-
-![API 结果](screenshot-api-result.png)
-
----
-
-## 七、踩坑大合集：错误排查全过程
-
-这一部分是整个文档最有价值的部分。
-
-### 7.1 错误一：ONEDNN / ConvertPirAttribute2RuntimeAttribute（最要命的坑）
-
-**错误现象**：
-
-在 PaddlePaddle 3.3.1 版本下，运行 OCR 推理时报错：
-
-```
-NotImplementedError: (Unimplemented) ConvertPirAttribute2RuntimeAttribute
-not support [pir::ArrayAttribute<pir::DoubleAttribute>]
-(at /paddle/paddle/fluid/framework/new_executor/instruction/onednn/onednn_instruction.cc:116)
-```
-
-![ONEDNN 错误截图](screenshot-onednn-error.png)
+![终端启动截图](screenshots_ocr_web/screenshot-terminal-start.png)
+![OCR 首页](screenshots_ocr_web/screenshot-ocr-home.png)
+![OCR 结果](screenshots_ocr_web/screenshot-ocr-result.png)
+![API 结果](screenshots_ocr_web/screenshot-api-result.png)
+![ONEDNN 错误截图](screenshots_ocr_web/screenshot-onednn-error.png)
 
 **原因分析**：
 
