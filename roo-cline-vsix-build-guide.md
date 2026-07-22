@@ -61,10 +61,10 @@ Roo-Cline 是用 TypeScript 写的，Node.js 就是它的"运行时"。可以这
 
 ```batch
 :: 创建工具目录
-mkdir C:\tools\nodejs
+mkdir D:\software\nodejs
 
 :: 进入目录
-cd /d C:\tools\nodejs
+cd /d D:\software\nodejs
 
 :: 从华为云下载 Node.js 20.19.2（--insecure 是跳过 SSL 证书检查，国内网络常有这个问题）
 curl --insecure -o node-v20.19.2-win-x64.zip https://repo.huaweicloud.com/nodejs/v20.19.2/node-v20.19.2-win-x64.zip
@@ -83,10 +83,10 @@ curl --insecure -o node-v20.19.2-win-x64.zip https://npm.taobao.org/mirrors/node
 
 ### 2.3 解压安装
 
-解压后放到 `C:\tools\nodejs\node-v20.19.2-win-x64`
+解压后放到 `D:\software\nodejs\node-v20.19.2-win-x64`
 
 ```
-C:\tools\nodejs\
+D:\software\nodejs\
     └── node-v20.19.2-win-x64\
         ├── node.exe         ← Node.js 本体
         ├── npm              ← 包管理器
@@ -103,7 +103,7 @@ C:\tools\nodejs\
 2. 点击"高级系统设置"
 3. 点击"环境变量"
 4. 在"系统变量"中找到 `Path`，双击编辑
-5. 点击"新建"，添加：`C:\tools\nodejs\node-v20.19.2-win-x64`
+5. 点击"新建"，添加：`D:\software\nodejs\node-v20.19.2-win-x64`
 6. 点击"确定"保存所有窗口
 
 **验证是否安装成功**：
@@ -144,13 +144,13 @@ pnpm --version
 
 ```batch
 :: 进入工作目录（没有的话先创建）
-cd /d C:\temp
+cd /d D:\workspace
 
 :: 克隆 Roo-Code 项目
 git clone https://github.com/liliangxing/Roo-Code.git
 
 :: 进入项目目录
-cd C:\temp\Roo-Code
+cd D:\workspace\Roo-Code
 
 :: 查看项目结构（确认下载成功）
 dir
@@ -208,7 +208,7 @@ git status
 如果你还是想用镜像试试，可以创建 `.npmrc` 文件：
 
 ```batch
-:: 创建 .npmrc 文件（在项目根目录 C:\temp\Roo-Code）
+:: 创建 .npmrc 文件（在项目根目录 D:\workspace\Roo-Code）
 echo registry=https://registry.npmmirror.com > .npmrc
 ```
 
@@ -219,7 +219,7 @@ echo registry=https://registry.npmmirror.com > .npmrc
 
 ```batch
 :: 进入项目目录
-cd /d C:\temp\Roo-Code
+cd /d D:\workspace\Roo-Code
 
 :: 运行安装命令
 pnpm install --frozen-lockfile
@@ -252,7 +252,7 @@ Done in 4m 24.4s                 ← 安装完成时间
 
 ```batch
 :: 进入项目目录
-cd /d C:\temp\Roo-Code
+cd /d D:\workspace\Roo-Code
 
 :: 清理
 pnpm clean
@@ -282,7 +282,7 @@ roo-cline:vsix         ← 最终打包
 ### 5.3 VSIX 文件在哪？
 
 ```
-C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix
+D:\workspace\Roo-Code\bin\roo-cline-3.53.0.vsix
 ```
 
 **文件信息**：
@@ -295,7 +295,7 @@ C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix
 1. 打开 VS Code
 2. 按 `Ctrl + Shift + P` 打开命令面板
 3. 输入并选择：`Extensions: Install from VSIX...`
-4. 选择 `C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix`
+4. 选择 `D:\workspace\Roo-Code\bin\roo-cline-3.53.0.vsix`
 5. 安装完成后，重启 VS Code
 
 ---
@@ -309,7 +309,7 @@ C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix
 **解决**：
 ```batch
 :: 检查 Node.js 安装路径
-dir C:\tools\nodejs\node-v20.19.2-win-x64\node.exe
+dir D:\software\nodejs\node-v20.19.2-win-x64\node.exe
 
 :: 如果文件存在，说明是环境变量问题
 :: 按 2.4 节重新配置环境变量
@@ -406,7 +406,7 @@ git config --global http.proxy http://你的代理地址:端口
 git config --global https.proxy http://你的代理地址:端口
 
 :: 方法二：换台电脑提交
-:: 把整个 C:\temp\Roo-Code 文件夹拷贝到能访问 GitHub 的电脑上，再运行 git push
+:: 把整个 D:\workspace\Roo-Code 文件夹拷贝到能访问 GitHub 的电脑上，再运行 git push
 
 :: 方法三：用 Gitee（国内 GitHub 替代）
 :: 先在 gitee.com 创建仓库，然后：
@@ -509,14 +509,14 @@ git show 3b96211
 
 ```batch
 :: 只编译代码（不打包）
-cd /d C:\temp\Roo-Code
+cd /d D:\workspace\Roo-Code
 pnpm run build
 
 :: 查看构建输出目录
-dir C:\temp\Roo-Code\bin
+dir D:\workspace\Roo-Code\bin
 
 :: 查看 VSIX 文件大小
-dir C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix
+dir D:\workspace\Roo-Code\bin\roo-cline-3.53.0.vsix
 
 :: 如果构建失败，查看详细错误
 pnpm vsix --verbose
@@ -526,16 +526,16 @@ pnpm vsix --verbose
 
 ```batch
 :: 查看项目依赖清单（看项目用了哪些包）
-type C:\temp\Roo-Code\package.json
+type D:\workspace\Roo-Code\package.json
 
 :: 查看 VS Code 插件配置（了解插件功能）
-type C:\temp\Roo-Code\src\package.json
+type D:\workspace\Roo-Code\src\package.json
 
 :: 查看 Node.js 版本要求
-findstr "node" C:\temp\Roo-Code\package.json
+findstr "node" D:\workspace\Roo-Code\package.json
 
 :: 查看构建脚本（了解打包流程）
-findstr "vsix" C:\temp\Roo-Code\package.json
+findstr "vsix" D:\workspace\Roo-Code\package.json
 ```
 
 ---
@@ -549,20 +549,20 @@ findstr "vsix" C:\temp\Roo-Code\package.json
 ```batch
 :: ===== 第 1 步：安装 Node.js =====
 :: 下载（选择一种方式）
-curl --insecure -o C:\tools\nodejs\node-v20.19.2-win-x64.zip https://repo.huaweicloud.com/nodejs/v20.19.2/node-v20.19.2-win-x64.zip
+curl --insecure -o D:\software\nodejs\node-v20.19.2-win-x64.zip https://repo.huaweicloud.com/nodejs/v20.19.2/node-v20.19.2-win-x64.zip
 
-:: 解压（用鼠标右键解压到 C:\tools\nodejs\）
+:: 解压（用鼠标右键解压到 D:\software\nodejs\）
 
-:: 配置环境变量 Path 添加：C:\tools\nodejs\node-v20.19.2-win-x64
+:: 配置环境变量 Path 添加：D:\software\nodejs\node-v20.19.2-win-x64
 :: 重新打开命令行窗口
 
 :: 验证安装
 node --version   &&   npm --version   &&   pnpm --version
 
 :: ===== 第 2 步：下载源码 =====
-cd /d C:\temp
+cd /d D:\workspace
 git clone https://github.com/liliangxing/Roo-Code.git
-cd C:\temp\Roo-Code
+cd D:\workspace\Roo-Code
 
 :: ===== 第 3 步：安装依赖 =====
 :: （如果遇到网络问题，就删掉 .npmrc 使用官方源）
@@ -574,7 +574,7 @@ pnpm clean
 pnpm vsix
 
 :: ===== 第 5 步：查看结果 =====
-dir C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix
+dir D:\workspace\Roo-Code\bin\roo-cline-3.53.0.vsix
 ```
 
 ### 8.2 常见问题快速解决
@@ -591,12 +591,12 @@ dir C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix
 
 | 文件/目录 | 说明 |
 |-----------|------|
-| `C:\tools\nodejs\node-v20.19.2-win-x64` | Node.js 安装目录 |
-| `C:\temp\Roo-Code` | 项目源码目录 |
-| `C:\temp\Roo-Code\package.json` | 项目配置文件 |
-| `C:\temp\Roo-Code\.npmrc` | npm 镜像配置（可以删） |
-| `C:\temp\Roo-Code\pnpm-lock.yaml` | 依赖锁定文件 |
-| `C:\temp\Roo-Code\bin\roo-cline-3.53.0.vsix` | 最终打包结果 |
+| `D:\software\nodejs\node-v20.19.2-win-x64` | Node.js 安装目录 |
+| `D:\workspace\Roo-Code` | 项目源码目录 |
+| `D:\workspace\Roo-Code\package.json` | 项目配置文件 |
+| `D:\workspace\Roo-Code\.npmrc` | npm 镜像配置（可以删） |
+| `D:\workspace\Roo-Code\pnpm-lock.yaml` | 依赖锁定文件 |
+| `D:\workspace\Roo-Code\bin\roo-cline-3.53.0.vsix` | 最终打包结果 |
 
 ---
 
