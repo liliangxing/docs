@@ -513,19 +513,272 @@ ec5ea1b1 Fix: remove kapt plugin from app module (ARouter processor crashes with
 
 ---
 
-## 附录：CatPaw 调用的模块方法
+## 八、CatPaw 调用的工具、模块方法、MCP 接口详解
 
-本工作中 CatPaw 调用的主要 shell 命令/命令序列：
+> 本节详细解释 CatPaw 在本工作中用到的**所有工具**，包括「是什么」「原理是什么」「怎么调用的」。
 
-| 用途 | 命令 |
-|------|------|
-| 查看构建状态 | `gh api "repos/liliangxing/zhenai2/actions/runs?per_page=3" --jq '.workflow_runs[]' ` |
-| 查看失败日志 | `gh run view RUN_ID --repo liliangxing/zhenai2 --log-failed` |
-| 读取仓库文件 | `gh api repos/.../contents/PATH?ref=BRANCH -q '.content' \| base64 -d` |
-| 获取文件 SHA | `gh api repos/.../contents/PATH?ref=BRANCH -q '.sha'` |
-| 更新/创建文件 | `gh api repos/.../contents/PATH --method PUT --field message="..." --field content="$(base64 -w0 file)" --field sha="..." --field branch="..."` |
-| 轮询构建循环 | `sleep 240 && gh api repos/.../actions/runs/RUN_ID --jq '{status, conclusion}'` |
-| 查看 Release | `gh api repos/liliangxing/zhenai2/releases/ID --jq '{tag, name, assets: [.assets[]?]}'` |
+### 8.1 模块方法（Module Methods）
+
+模块方法是 CatPaw AI 助手内置的「手脚」——能让它读写文件、执行命令、搜索代码。本次用到的核心方法：
+
+#### 8.1.1 `bash` — 执行 Shell 命令（使用频率：最高）
+
+**是什么**：直接在 Linux 终端里跑命令。CatPaw 的所有 `gh api`、`sleep`、`base64`、`find`、`grep`、`unzip` 等命令，都是通过 `bash` 这个模块方法执行的。
+
+**原理**：CatPaw 把命令字符串发给宿主机的 shell（/bin/bash），执行后捕获 stdout/stderr 返回给 AI。等价于你手动在终端输入命令。
+
+**CatPaw 实际调用示例**：
+```
+bash(command="gh api repos/liliangxing/zhenai2/actions/runs?per_page=3 --jq '.workflow_runs[]'")
+→ 返回 JSON 数组，包含最近 3 次 GitHub Actions 运行的状态
+
+bash(command="sleep 180 && gh api repos/.../actions/runs/30708773168 --jq '{status, conclusion}'")
+→ 等 3 分钟后查询某个构建的状态
+
+bash(command="base64 -w0 /tmp/app_build.gradle.kts")
+→ 把 build.gradle.kts 编码成 base64 字符串，用于 GitHub API 更新文件
+```
+
+**为什么用 `bash` 而不是其他方法**：本工作是纯命令行操作，没有现成的模块方法能直接「查询 GitHub Actions」或「更新仓库文件」，所以只能通过 `bash` 调用 `gh` 命令来完成。
+
+#### 8.1.2 `read_file` — 读文件（用于读参考文档）
+
+**是什么**：读取本地文件的内容，返回给 AI 看。
+
+**原理**：按路径打开文件，按行读取文本。文件 >256KB 时需分段读（用 offset/limit 参数）。
+
+**CatPaw 实际调用示例**：
+```
+read_file(target_file="/mnt/data/catpaw/home/.meituan-catpaw/217020109/projects/.../bbaztcfbe.txt")
+→ 读取之前的会话记录（前一会话的完整文档），了解已有内容
+```
+
+#### 8.1.3 `write` — 写文件（用于新建临时文件）
+
+**是什么**：把一段文本写入（或覆盖）一个文件。
+
+**原理**：全量写入文件，如果文件已存在需要先读取内容（CatPaw 内部约束）。
+
+**CatPaw 实际调用示例**：
+```
+write(file_path="/tmp/app_build.gradle.kts", contents="...修改后的 build.gradle.kts 内容...")
+→ 把修改后的 build.gradle.kts 存到 /tmp/，再用 bash 里的 base64 编码后推送到 GitHub
+
+write(file_path="/tmp/SplashActivity.kt", contents="...移除 @Route 后的 SplashActivity 代码...")
+→ 准备替换用的代码文件
+```
+
+#### 8.1.4 `string_replace` — 精确替换文件片段
+
+**是什么**：在现有文件中找到一段**唯一文本**，替换成新内容。比 write 更精确（只改该改的地方）。
+
+**原理**：读取文件 → 搜索 old_string → 确认唯一匹配 → 替换为 new_string。要求 old_string 至少包含 3-5 行上下文以确保唯一性。
+
+**本次未使用**：因为本工作新建/全量修改的占多数，string_replace 更适合改大文件中的一小段。
+
+#### 8.1.5 `grep` — 全文搜索代码
+
+**是什么**：在文件（或目录）中用正则搜索关键字。
+
+**原理**：基于 ripgrep（rg）的高效正则搜索，支持多文件、多行匹配。
+
+**CatPaw 实际调用示例**（本工作中，从前一会话继承的工具）：
+```
+grep(path="/workspace", pattern="@Route.*path.*=.*RouterPath" --glob "*.kt")
+→ 找出所有引用 RouterPath 常量的 @Route 注解
+```
+
+#### 8.1.6 `glob` — 按通配符找文件
+
+**是什么**：用通配符匹配文件名，返回路径列表。
+
+**CatPaw 实际调用示例**（本工作中，从前一会话继承的工具）：
+```
+glob(glob_pattern="**/build.gradle.kts")
+→ 找到项目中的所有 build.gradle.kts 文件
+```
+
+#### 8.1.7 `todo_write` — 维护任务清单
+
+**是什么**：创建和更新 TODO 列表，标记任务进度。
+
+**原理**：在 AI 对话内存维护状态，不写文件。
+
+**CatPaw 实际调用**：本工作多次使用，例如：
+```
+todo_write(todos=[
+  {id: "1", content: "修复 ARouter kapt 处理器崩溃", status: "in_progress"},
+  {id: "2", content: "GitHub Actions 构建成功并上传 APK", status: "pending"},
+  {id: "3", content: "验证 APK 上传到 release", status: "pending"}
+])
+```
+
+---
+
+### 8.2 GitHub CLI（gh）— 核心工具
+
+`gh` 是 GitHub 官方命令行工具，**本工作几乎全部 git/GitHub 操作都是通过 `gh` 完成的**，没用 `git push` / `git commit`。
+
+#### 8.2.1 为什么用 `gh` 而不是 `git`？
+
+| 对比 | git | gh |
+|------|-----|----|
+| 认证 | 需配置 SSH Key 或 token | `gh auth login --with-token` 一次搞定 |
+| API 操作 | 不支持 | 直接调 GitHub REST API |
+| 速度 | 需 clone 整个仓库 | 单文件操作，不用 clone |
+| Release 管理 | 不支持 | `gh release create ...` |
+
+**本工作clone 了吗？** 没有。全程用 `gh api` 直接操作远程仓库文件，不 clone、不 git commit、不 git push。
+
+#### 8.2.2 `gh` 在本工作中用到的子命令
+
+| 子命令 | 作用 | 调用频次 |
+|--------|------|---------|
+| `gh api` | 直接调 GitHub REST API | ★★★★★（用了几十次） |
+| `gh run view` | 查看 GitHub Actions 工作流运行日志 | ★★★★☆ |
+| `gh auth login` | 用 token 登录（提前配置好的） | 一次性（前一会话） |
+
+#### 8.2.3 `gh api` 详细用法（本工作核心命令）
+
+`gh api` 本质是 GitHub REST API 的命令行封装。下面列出本工作中实际使用的所有 `gh api` 模式：
+
+**模式 1：获取文件内容**
+```bash
+# 获取文件（返回 base64 编码的 JSON）
+gh api repos/liliangxing/zhenai2/contents/app/build.gradle.kts?ref=v0.1.0-fixed \
+  -q '.content' | base64 -d
+```
+**参数说明**：
+- `repos/{owner}/{repo}/contents/{path}` — GitHub Contents API
+- `?ref=v0.1.0-fixed` — 指定分支
+- `-q '.content'` — 用 jq 过滤出 content 字段
+- `| base64 -d` — 解码 base64 为文本
+
+**原理**：GitHub API 的文件内容用 Base64 编码返回（API 只传文本 JSON，二进制需编码）。
+
+**模式 2：获取文件 SHA（更新前必须拿到）**
+```bash
+gh api repos/liliangxing/zhenai2/contents/.github/workflows/build-apk.yml?ref=v0.1.0-fixed \
+  -q '.sha'
+```
+**为什么需要 SHA**：GitHub API 更新文件时，必须传当前文件的 SHA（类似「版本号」），防止覆盖别人的修改。
+
+**模式 3：更新/创建文件**
+```bash
+gh api repos/liliangxing/zhenai2/contents/app/build.gradle.kts \
+  --method PUT \
+  --field message="Fix: remove kapt from app module" \
+  --field content="$(base64 -w0 /tmp/app_build.gradle.kts)" \
+  --field sha="920e172c02f76123d709fe79a9ae1db1fba2a569" \
+  --field branch="v0.1.0-fixed"
+```
+**参数说明**：
+- `--method PUT` — HTTP PUT（GitHub API 用 PUT 更新文件）
+- `--field message` — 提交说明（会显示在 git log）
+- `--field content` — 新文件内容（需 base64 编码）
+- `--field sha` — 当前文件的 SHA（从模式 2 获取）
+- `--field branch` — 目标分支
+
+**返回值**：
+```json
+{
+  "commit": {"sha": "ec5ea1b1538447bcafd60ef7012b45ac476c7c76"},
+  "content": {"name": "build.gradle.kts", "sha": "920e172c..."}
+}
+```
+
+**模式 4：查询 GitHub Actions 运行列表**
+```bash
+gh api "repos/liliangxing/zhenai2/actions/runs?per_page=3" \
+  --jq '.workflow_runs[] | {id, status, conclusion, head_sha: .head_sha[0:8]}'
+```
+**参数说明**：
+- `?per_page=3` — 只取最新 3 条
+- `--jq '...'` — 用 jq 过滤输出格式
+
+**模式 5：查询 Release 资产**
+```bash
+gh api repos/liliangxing/zhenai2/releases \
+  --jq '.[] | select(.tag_name == "v0.1.1-fixed") | {tag_name, name, assets: [.assets[]?.name]}'
+```
+
+---
+
+### 8.3 Skills（技能）— 本次未使用
+
+Skill 是「针对特定任务的成套流程脚本」，AI 匹配到后会按流程执行。本工作的环境中有以下 Skills 可用：
+
+| Skill | 用途 | 本次为什么没用 |
+|-------|------|-------------|
+| `pdf` | PDF 处理（提取/合并/加密） | APK 编译不需要 PDF |
+| `pptx` | PPT 演示文稿处理 | 不涉及 |
+| `docx` | Word 文档处理 | 不涉及 |
+| `xlsx` | Excel 表格处理 | 不涉及 |
+| `skill-creator` | 创建新技能 | 不涉及 |
+| `catpaw-skill-manager` | 技能管理 | 不涉及 |
+| `paw-browser` | 浏览器自动化 | 不涉及 |
+| `paw-settings` | CatPaw 设置管理 | 不涉及 |
+| `expert-manager` | 专家系统管理 | 不涉及 |
+| `env-setup` | 开发环境安装（Node.js/Python） | 工作已由 GitHub Actions 托管环境完成，不需要本地装 |
+
+**为什么不触发 Skill？** Skill 是「匹配式触发」的——只有当你的任务明确属于某个 Skill 的能力范围时才会加载。本工作的核心是「写 YAML 文件 + 调命令行 + 读日志」，这是通用任务，不属于任何特定 Skill 的范畴。
+
+**如果你想在本工作用 Skill**：可以手动要求 CatPaw：「用 env-setup skill 帮我检查 Java 环境」。但实际价值不大——本工作已在 GitHub Actions 的 ubuntu-latest runner 里跑，环境是 GitHub 预置的，不需要你装任何东西。
+
+---
+
+### 8.4 MCP（Model Context Protocol）— 本次未使用
+
+MCP 是「让 AI 连接外部标准化服务」的接口层。本工作环境中注册了以下 MCP 工具：
+
+| MCP 工具 | 用途 | 本次为什么没用 |
+|---------|------|-------------|
+| `resolve-library-id` | 把开源库名解析成标准 ID | 不查第三方库文档 |
+| `query-docs` | 查开源库在线文档 | 问题的答案在本地日志里，不需要查文档 |
+| `web_search` | 网页搜索 | 代码问题不需要联网 |
+| `web_fetch` | 抓网页内容 | 不需要 |
+
+**为什么不触发 MCP？** 本工作是「本地编译调试」类问题：
+- 答案藏在**构建日志**（`gh run view --log-failed` 能看到）
+- 不依赖**外部文档**（ARouter 的 bug 不是看文档能解决的，得看处理器源码行为）
+- 不需要**网页搜索**（错误现象已经明确，不需要找别人的类似案例）
+
+只有出现以下情况时 MCP 才会被调用：
+- 用户问「ARouter 1.5.2 的官方文档怎么说」→ 触发 `query-docs`
+- 用户问「最近有没有 ARouter 的 update 新闻」→ 触发 `web_search`
+
+**MCP 原理简述**：MCP 是 C/S 架构——MCP Server 提供标准化工具接口（如「查文档」「搜索」），MCP Client（CatPaw）通过 JSON-RPC 协议调用。类比：MCP 是「USB 接口」，MCP Server 是「U盘/键盘」，即插即用。本项目没有安装额外的 MCP Server（只有内置的文档查询），所以即使想用也调用不了外部服务。
+
+---
+
+### 8.5 工具调用关系图
+
+```
+用户: "帮我把这个 tag 生成 apk 上传到 release"
+          │
+          ▼
+      CatPaw（AI 大脑）
+          │
+          ├─(判断)→ 这是「命令行操作任务」
+          │         ├── 不匹配任何 Skill → 不加载 Skill
+          │         └── 不需要外部文档 → 不调用 MCP
+          │
+          ├─(调用模块方法)→ bash:
+          │   ├─ gh api repos/.../actions/runs?per_page=3 → 查看构建状态
+          │   ├─ gh run view 30708773168 --log-failed → 查失败日志
+          │   ├─ gh api repos/.../contents/app/build.gradle.kts → 读代码
+          │   ├─ 分析日志 → 定位 ARouter 处理器崩溃
+          │   └─ gh api ...contents/... --method PUT → 推送修复
+          │
+          ├─(调用模块方法)→ write:
+          │   └─ write file to /tmp/app_build.gradle.kts → 准备文件
+          │
+          ├─(调用模块方法)→ bash:
+          │   └─ base64 -w0 /tmp/app_build.gradle.kts → 编码后推送
+          │
+          └─(调用模块方法)→ todo_write:
+              └─ 标记任务进度
+```
 
 ---
 
