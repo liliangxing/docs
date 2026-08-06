@@ -38,6 +38,9 @@
 - 4 个手写的 Java 源码文件（对应自定义的 Smali 类）
 - 一个已签名的 APK（v21）
 
+> **代码仓库地址：** 所有源码（Smali + Java + 构建脚本）都已提交到 `https://github.com/liliangxing/trae-cn2`（已更名为 trae-cn3）。
+> 仓库内有 `README.md`（项目结构说明）和 `AGENTS_GUIDE.md`（AI Agent 操作指引），**其他 Agent 请先读这两个文件**。
+
 本次会话要做的事：
 1. **验证** Smali 修改是否正确（对比 dex 内容与源码）
 2. **干净重建** APK（从解包目录重新打包 + 签名）
